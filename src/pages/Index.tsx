@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
@@ -5,7 +6,7 @@ import EmailList from '../components/EmailList';
 import EmailDetail from '../components/EmailDetail';
 import VoiceAssistant from '../components/VoiceAssistant';
 import { VoiceAssistant as VoiceAssistantUtil } from '../utils/voiceUtils';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   // State for UI
@@ -38,6 +39,16 @@ const Index = () => {
       });
     });
 
+    // Command to activate voice assistant
+    assistant.registerCommand("activate voice", () => {
+      setVoiceAssistantActive(true);
+      assistant.activate();
+      toast({
+        title: "Voice Assistant",
+        description: "Voice assistant activated",
+      });
+    });
+
     // Add welcome announcement for screen readers when the app first loads
     const welcomeMessage = "Welcome to Voice Mail. Voice assistant is available. Say 'activate voice' to turn it on.";
     setTimeout(() => {
@@ -45,6 +56,9 @@ const Index = () => {
         title: "Voice Mail",
         description: welcomeMessage,
       });
+      
+      // Also speak the welcome message for blind users
+      assistant.speak(welcomeMessage);
     }, 1000);
     
     // Clean up when component unmounts
@@ -65,8 +79,16 @@ const Index = () => {
     
     if (!voiceAssistantActive) {
       assistant.activate();
+      toast({
+        title: "Voice Assistant",
+        description: "Voice assistant activated. Try saying 'help' for available commands.",
+      });
     } else {
       assistant.deactivate();
+      toast({
+        title: "Voice Assistant",
+        description: "Voice assistant deactivated",
+      });
     }
   };
 

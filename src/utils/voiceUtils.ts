@@ -1,3 +1,4 @@
+
 // Interface for speech synthesis options
 export interface SpeechOptions {
   voice?: SpeechSynthesisVoice;
@@ -127,6 +128,8 @@ export class SpeechRecognition {
     interimResults: true,
     lang: 'en-US'
   };
+  private errorCallback: ((error: string) => void) | null = null;
+  private endCallback: (() => void) | null = null;
 
   private constructor() {
     // Check for browser support
@@ -158,12 +161,20 @@ export class SpeechRecognition {
     this.recognition.onerror = (event: any) => {
       console.error("Speech recognition error:", event.error);
       this.isListening = false;
+      
+      if (this.errorCallback) {
+        this.errorCallback(event.error);
+      }
     };
     
     // Handle when recognition stops
     this.recognition.onend = () => {
       console.log("Speech recognition ended");
       this.isListening = false;
+      
+      if (this.endCallback) {
+        this.endCallback();
+      }
     };
   }
 
@@ -212,6 +223,15 @@ export class SpeechRecognition {
   public setDefaultOptions(options: RecognitionOptions): void {
     this.defaultOptions = { ...this.defaultOptions, ...options };
     this.setupRecognition();
+  }
+  
+  // Add callback methods for error and end events
+  public onError(callback: (error: string) => void): void {
+    this.errorCallback = callback;
+  }
+  
+  public onEnd(callback: () => void): void {
+    this.endCallback = callback;
   }
 }
 
@@ -279,6 +299,8 @@ export class VoiceAssistant {
   }
 
   public speak(text: string, onComplete?: () => void): void {
+    console.log("Speaking:", text);
+    
     // Stop speech recognition while speaking to avoid feedback loop
     const wasListening = this.stt.isRecognizing();
     if (wasListening) this.stt.stop();
@@ -301,6 +323,7 @@ export class VoiceAssistant {
 
   private processCommand(text: string): void {
     const lowerText = text.toLowerCase().trim();
+    console.log("Processing command:", lowerText);
     
     // Check for exact command matches
     for (const [command, handler] of this.commandHandlers.entries()) {

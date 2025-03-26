@@ -1,7 +1,8 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { Mic, X, Volume2, VolumeX, Settings, ChevronUp, ChevronDown } from 'lucide-react';
 import { VoiceAssistant as VoiceAssistantUtil, SpeechRecognition, TextToSpeech } from '../utils/voiceUtils';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface VoiceAssistantProps {
   isActive: boolean;
@@ -18,15 +19,33 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   onReadEmail,
   onNavigateBack
 }) => {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true); // Start expanded to show UI feedback
   const [transcript, setTranscript] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
   const [speechRate, setSpeechRate] = useState(1);
   const [speechVolume, setSpeechVolume] = useState(1);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [isListening, setIsListening] = useState(false);
   const assistantInstance = useRef(VoiceAssistantUtil.getInstance()).current;
   const recognitionInstance = useRef(SpeechRecognition.getInstance()).current;
   const ttsInstance = useRef(TextToSpeech.getInstance()).current;
   const { toast } = useToast();
+
+  // Update listening status when voice assistant is toggled
+  useEffect(() => {
+    setIsListening(isActive);
+    
+    if (isActive) {
+      // Expand the UI when activated
+      setExpanded(true);
+      
+      // Announce that the assistant is listening
+      toast({
+        title: "Voice Assistant",
+        description: "Voice assistant is listening for commands",
+      });
+    }
+  }, [isActive, toast]);
 
   useEffect(() => {
     // Register voice commands
@@ -152,19 +171,75 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         }
       });
 
-      // Start listening for commands
-      recognitionInstance.start({}, (result, isFinal) => {
-        if (isFinal) {
-          setTranscript(result);
-          setCommandHistory(prev => [result, ...prev].slice(0, 5));
+      // Start speech recognition
+      startRecognition();
+    } else {
+      // Stop listening when inactive
+      recognitionInstance.stop();
+    }
+
+    return () => {
+      // Clean up
+      recognitionInstance.stop();
+    };
+  }, [isActive, assistantInstance, recognitionInstance, ttsInstance, onSelectFolder, onNavigateBack, toast]);
+
+  // New function to start recognition with proper error handling
+  const startRecognition = () => {
+    try {
+      recognitionInstance.start(
+        { 
+          continuous: true, 
+          interimResults: true 
+        }, 
+        (result, isFinal) => {
+          // Show interim results (what you're currently saying)
+          if (!isFinal) {
+            setInterimTranscript(result);
+          } else {
+            // When a phrase is finalized
+            setInterimTranscript('');
+            setTranscript(result);
+            setCommandHistory(prev => [result, ...prev].slice(0, 5));
+            
+            // Also log to console for debugging
+            console.log("Recognized speech (final):", result);
+          }
+        }
+      );
+      setIsListening(true);
+      
+      // Add event handlers for recognition errors and status changes
+      recognitionInstance.onError((error) => {
+        console.error("Speech recognition error:", error);
+        setIsListening(false);
+        toast({
+          title: "Voice Assistant Error",
+          description: `Recognition error: ${error}. Try again.`,
+        });
+        
+        // Try to restart recognition after a brief pause
+        setTimeout(startRecognition, 1000);
+      });
+      
+      recognitionInstance.onEnd(() => {
+        console.log("Recognition ended");
+        setIsListening(false);
+        
+        // Restart if the assistant is still active but recognition ended
+        if (isActive) {
+          setTimeout(startRecognition, 500);
         }
       });
-
-      return () => {
-        recognitionInstance.stop();
-      };
+      
+    } catch (error) {
+      console.error("Failed to start speech recognition:", error);
+      toast({
+        title: "Voice Assistant Error",
+        description: "Could not start speech recognition. Please check browser permissions.",
+      });
     }
-  }, [isActive, assistantInstance, recognitionInstance, ttsInstance, onSelectFolder, onNavigateBack, toast]);
+  };
 
   const toggleExpanded = () => {
     setExpanded(!expanded);
@@ -205,7 +280,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
           aria-label={expanded ? "Collapse voice assistant panel" : "Expand voice assistant panel"}
           className="flex items-center gap-2"
         >
-          <Mic size={20} />
+          <Mic size={20} className={isListening ? "animate-pulse text-red-200" : ""} />
           <span className="font-medium">Voice Assistant</span>
           {expanded ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
         </button>
@@ -231,19 +306,40 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       
       {expanded && (
         <>
-          {/* Current transcript */}
+          {/* Current transcript with listening status */}
           <div className="p-4 border-b border-gray-100">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">I heard:</h3>
-            <p className="text-gray-800 bg-gray-50 p-2 rounded min-h-[2.5rem]">
-              {transcript || "Listening..."}
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-500">I heard:</h3>
+              <span className={`text-xs px-2 py-1 rounded-full ${isListening ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                {isListening ? 'Listening...' : 'Not listening'}
+              </span>
+            </div>
+            
+            <div className="bg-gray-50 p-3 rounded min-h-[3.5rem] relative">
+              {/* Display the final transcript */}
+              <p className="text-gray-800 mb-1">
+                {transcript || "Say something..."}
+              </p>
+              
+              {/* Display the interim transcript in italics if available */}
+              {interimTranscript && (
+                <p className="text-gray-500 italic text-sm">
+                  {interimTranscript}
+                </p>
+              )}
+              
+              {/* Visual indicator that microphone is active */}
+              {isListening && (
+                <div className="absolute right-2 top-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              )}
+            </div>
           </div>
           
           {/* Command history */}
           <div className="p-4 border-b border-gray-100">
             <h3 className="text-sm font-medium text-gray-500 mb-2">Recent commands:</h3>
             {commandHistory.length > 0 ? (
-              <ul className="text-sm space-y-1">
+              <ul className="text-sm space-y-1 max-h-20 overflow-y-auto">
                 {commandHistory.map((cmd, idx) => (
                   <li key={idx} className="text-gray-600">• {cmd}</li>
                 ))}
