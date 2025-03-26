@@ -1,8 +1,9 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Mic, X, Volume2, VolumeX, Settings, ChevronUp, ChevronDown } from 'lucide-react';
+import { Mic, X, Volume2, VolumeX, Settings, ChevronUp, ChevronDown, AlertCircle } from 'lucide-react';
 import { VoiceAssistant as VoiceAssistantUtil, SpeechRecognition, TextToSpeech } from '../utils/voiceUtils';
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface VoiceAssistantProps {
   isActive: boolean;
@@ -26,6 +27,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   const [speechVolume, setSpeechVolume] = useState(1);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [isListening, setIsListening] = useState(false);
+  const [microphoneError, setMicrophoneError] = useState<string | null>(null);
   const assistantInstance = useRef(VoiceAssistantUtil.getInstance()).current;
   const recognitionInstance = useRef(SpeechRecognition.getInstance()).current;
   const ttsInstance = useRef(TextToSpeech.getInstance()).current;
@@ -36,8 +38,14 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     setIsListening(isActive);
     
     if (isActive) {
+      // Clear any previous errors
+      setMicrophoneError(null);
+      
       // Expand the UI when activated
       setExpanded(true);
+      
+      // Check for microphone permission first
+      checkMicrophonePermission();
       
       // Announce that the assistant is listening
       toast({
@@ -46,6 +54,40 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       });
     }
   }, [isActive, toast]);
+
+  // Function to check microphone permission
+  const checkMicrophonePermission = async () => {
+    try {
+      // Request microphone permission
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      setMicrophoneError(null);
+      
+      // Once we have permission, start recognition
+      startRecognition();
+    } catch (error) {
+      console.error("Microphone permission error:", error);
+      
+      // Set specific error message based on error type
+      if (error instanceof DOMException) {
+        if (error.name === "NotAllowedError") {
+          setMicrophoneError("Microphone access denied. Please allow microphone access in your browser settings.");
+        } else if (error.name === "NotFoundError") {
+          setMicrophoneError("No microphone detected. Please connect a microphone and try again.");
+        } else {
+          setMicrophoneError(`Microphone access error: ${error.message}`);
+        }
+      } else {
+        setMicrophoneError("Could not access microphone. Please check your device and browser settings.");
+      }
+      
+      // Also show toast for immediate feedback
+      toast({
+        title: "Microphone Error",
+        description: "Could not access microphone. Please check permissions.",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     // Register voice commands
@@ -171,8 +213,11 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         }
       });
 
-      // Start speech recognition
-      startRecognition();
+      // New command to retry microphone access if there was an error
+      assistantInstance.registerCommand("retry microphone", () => {
+        assistantInstance.speak("Retrying microphone access");
+        checkMicrophonePermission();
+      });
     } else {
       // Stop listening when inactive
       recognitionInstance.stop();
@@ -208,35 +253,54 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         }
       );
       setIsListening(true);
+      setMicrophoneError(null);
       
       // Add event handlers for recognition errors and status changes
       recognitionInstance.onError((error) => {
         console.error("Speech recognition error:", error);
         setIsListening(false);
+        
+        // Set appropriate error message based on error type
+        if (error === "audio-capture") {
+          setMicrophoneError("Could not capture audio. Please check your microphone connection and permissions.");
+        } else if (error === "not-allowed") {
+          setMicrophoneError("Microphone access denied. Please allow microphone access in your browser settings.");
+        } else if (error === "no-speech") {
+          // For no-speech, just reset listening state but don't show permanent error
+          setMicrophoneError(null);
+        } else {
+          setMicrophoneError(`Recognition error: ${error}. Please try again.`);
+        }
+        
         toast({
           title: "Voice Assistant Error",
-          description: `Recognition error: ${error}. Try again.`,
+          description: `Recognition error: ${error}. ${error === "audio-capture" ? "Please check your microphone connection." : "Try again."}`,
+          variant: "destructive",
         });
         
-        // Try to restart recognition after a brief pause
-        setTimeout(startRecognition, 1000);
+        // Only try to restart for certain errors
+        if (error === "no-speech" || error === "aborted") {
+          setTimeout(startRecognition, 1000);
+        }
       });
       
       recognitionInstance.onEnd(() => {
         console.log("Recognition ended");
         setIsListening(false);
         
-        // Restart if the assistant is still active but recognition ended
-        if (isActive) {
+        // Only restart if the assistant is still active and there's no microphone error
+        if (isActive && !microphoneError) {
           setTimeout(startRecognition, 500);
         }
       });
       
     } catch (error) {
       console.error("Failed to start speech recognition:", error);
+      setMicrophoneError("Could not start speech recognition. Please check browser permissions.");
       toast({
         title: "Voice Assistant Error",
         description: "Could not start speech recognition. Please check browser permissions.",
+        variant: "destructive",
       });
     }
   };
@@ -264,12 +328,16 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     }
   };
 
+  const handleRetryMicrophone = () => {
+    checkMicrophonePermission();
+  };
+
   return (
     <div 
       className={`fixed bottom-6 right-6 z-50 bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 ease-in-out
                  ${expanded ? 'w-80' : 'w-auto'} animate-scale`}
       style={{ 
-        maxHeight: expanded ? '400px' : '60px',
+        maxHeight: expanded ? '500px' : '60px',
         transform: isActive ? 'scale(1)' : 'scale(0.95)'
       }}
     >
@@ -306,6 +374,23 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       
       {expanded && (
         <>
+          {/* Microphone Error Alert */}
+          {microphoneError && (
+            <Alert variant="destructive" className="m-3">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Microphone Error</AlertTitle>
+              <AlertDescription>
+                {microphoneError}
+                <button 
+                  onClick={handleRetryMicrophone}
+                  className="block mt-2 text-sm underline"
+                >
+                  Retry microphone access
+                </button>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {/* Current transcript with listening status */}
           <div className="p-4 border-b border-gray-100">
             <div className="flex items-center justify-between mb-2">
@@ -402,6 +487,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
               <li>• "go back"</li>
               <li>• "speed 0.8" (0.5-2.0)</li>
               <li>• "volume 0.5" (0-1)</li>
+              <li>• "retry microphone"</li>
               <li>• "help"</li>
             </ul>
           </div>
