@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
@@ -6,6 +5,7 @@ import EmailList from '../components/EmailList';
 import EmailDetail from '../components/EmailDetail';
 import VoiceAssistant from '../components/VoiceAssistant';
 import { VoiceAssistant as VoiceAssistantUtil } from '../utils/voiceUtils';
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   // State for UI
@@ -13,8 +13,9 @@ const Index = () => {
   const [activeFolder, setActiveFolder] = useState('inbox');
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [voiceAssistantActive, setVoiceAssistantActive] = useState(false);
+  const { toast } = useToast();
 
-  // Initialize voice assistant
+  // Initialize voice assistant with additional commands for blind users
   useEffect(() => {
     const assistant = VoiceAssistantUtil.getInstance();
     
@@ -22,18 +23,35 @@ const Index = () => {
     assistant.registerCommand("open sidebar", () => {
       setSidebarVisible(true);
       assistant.speak("Sidebar opened");
+      toast({
+        title: "Voice Assistant",
+        description: "Sidebar opened",
+      });
     });
     
     assistant.registerCommand("close sidebar", () => {
       setSidebarVisible(false);
       assistant.speak("Sidebar closed");
+      toast({
+        title: "Voice Assistant",
+        description: "Sidebar closed",
+      });
     });
+
+    // Add welcome announcement for screen readers when the app first loads
+    const welcomeMessage = "Welcome to Voice Mail. Voice assistant is available. Say 'activate voice' to turn it on.";
+    setTimeout(() => {
+      toast({
+        title: "Voice Mail",
+        description: welcomeMessage,
+      });
+    }, 1000);
     
     // Clean up when component unmounts
     return () => {
       assistant.deactivate();
     };
-  }, []);
+  }, [toast]);
 
   // Toggle sidebar visibility
   const toggleSidebar = () => {

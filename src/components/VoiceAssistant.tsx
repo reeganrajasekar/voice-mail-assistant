@@ -1,7 +1,7 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { Mic, X, Volume2, VolumeX, Settings, ChevronUp, ChevronDown } from 'lucide-react';
 import { VoiceAssistant as VoiceAssistantUtil, SpeechRecognition, TextToSpeech } from '../utils/voiceUtils';
+import { useToast } from "@/components/ui/use-toast";
 
 interface VoiceAssistantProps {
   isActive: boolean;
@@ -26,14 +26,67 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   const assistantInstance = useRef(VoiceAssistantUtil.getInstance()).current;
   const recognitionInstance = useRef(SpeechRecognition.getInstance()).current;
   const ttsInstance = useRef(TextToSpeech.getInstance()).current;
+  const { toast } = useToast();
 
   useEffect(() => {
     // Register voice commands
     if (isActive) {
+      // Enhanced commands for blind users
+      
       // Command to read the current email
       assistantInstance.registerCommand("read email", () => {
         assistantInstance.speak("Reading current email");
-        // Trigger read email action with currently selected email
+        // This will trigger onReadEmail with the currently selected email
+        const announceText = "Reading email content now";
+        toast({
+          title: "Voice Assistant",
+          description: announceText,
+        });
+        assistantInstance.speak(announceText);
+      });
+      
+      // Command to summarize the email
+      assistantInstance.registerCommand("summarize", () => {
+        const announceText = "Summarizing the current email content";
+        toast({
+          title: "Voice Assistant",
+          description: announceText,
+        });
+        assistantInstance.speak(announceText);
+        // In a real app, this would call an AI service to summarize the email
+      });
+
+      // Command to reply to email
+      assistantInstance.registerCommand("reply", () => {
+        const announceText = "Opening reply composer";
+        toast({
+          title: "Voice Assistant",
+          description: announceText,
+        });
+        assistantInstance.speak(announceText);
+        // This would open the reply composer
+      });
+
+      // Command to delete email
+      assistantInstance.registerCommand("delete", () => {
+        const announceText = "Deleting current email";
+        toast({
+          title: "Voice Assistant", 
+          description: announceText,
+        });
+        assistantInstance.speak(announceText);
+        // This would delete the current email
+      });
+
+      // Command to mark as important
+      assistantInstance.registerCommand("mark important", () => {
+        const announceText = "Marking email as important";
+        toast({
+          title: "Voice Assistant",
+          description: announceText,
+        });
+        assistantInstance.speak(announceText);
+        // This would mark the email as important
       });
 
       // Command to navigate to a folder
@@ -41,7 +94,12 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         if (args) {
           const folder = args.toLowerCase();
           if (["inbox", "starred", "sent", "drafts", "trash", "spam"].includes(folder)) {
-            assistantInstance.speak(`Opening ${folder} folder`);
+            const announceText = `Opening ${folder} folder`;
+            toast({
+              title: "Voice Assistant",
+              description: announceText,
+            });
+            assistantInstance.speak(announceText);
             onSelectFolder(folder);
           } else {
             assistantInstance.speak(`I couldn't find a folder named ${folder}`);
@@ -51,8 +109,19 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
 
       // Command to go back
       assistantInstance.registerCommand("go back", () => {
-        assistantInstance.speak("Going back to email list");
+        const announceText = "Going back to email list";
+        toast({
+          title: "Voice Assistant",
+          description: announceText,
+        });
+        assistantInstance.speak(announceText);
         onNavigateBack();
+      });
+
+      // Enhanced accessibility commands
+      assistantInstance.registerCommand("describe page", () => {
+        const currentPage = "You are in the email viewer. You can use voice commands to navigate and manage your emails.";
+        assistantInstance.speak(currentPage);
       });
 
       // Set voice settings
@@ -95,7 +164,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         recognitionInstance.stop();
       };
     }
-  }, [isActive, assistantInstance, recognitionInstance, ttsInstance, onSelectFolder, onNavigateBack]);
+  }, [isActive, assistantInstance, recognitionInstance, ttsInstance, onSelectFolder, onNavigateBack, toast]);
 
   const toggleExpanded = () => {
     setExpanded(!expanded);
@@ -230,6 +299,10 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
             <ul className="space-y-1">
               <li>• "open inbox/starred/sent/etc"</li>
               <li>• "read email"</li>
+              <li>• "summarize"</li>
+              <li>• "reply"</li>
+              <li>• "delete"</li>
+              <li>• "mark important"</li>
               <li>• "go back"</li>
               <li>• "speed 0.8" (0.5-2.0)</li>
               <li>• "volume 0.5" (0-1)</li>

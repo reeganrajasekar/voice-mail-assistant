@@ -2,7 +2,7 @@
 import React from 'react';
 import { ArrowLeft, Star, Reply, Trash, Mail, Volume2, VolumeX } from 'lucide-react';
 import { Email, getEmailById } from '../utils/emailData';
-import { VoiceAssistant, formatEmailForSpeech } from '../utils/voiceUtils';
+import { VoiceAssistant, formatEmailForSpeech, TextToSpeech } from '../utils/voiceUtils';
 
 interface EmailDetailProps {
   emailId: string | null;
@@ -13,6 +13,7 @@ const EmailDetail: React.FC<EmailDetailProps> = ({ emailId, onBack }) => {
   const [email, setEmail] = React.useState<Email | null>(null);
   const [isReading, setIsReading] = React.useState(false);
   const voiceAssistant = VoiceAssistant.getInstance();
+  const tts = TextToSpeech.getInstance();
 
   React.useEffect(() => {
     if (emailId) {
@@ -47,7 +48,8 @@ const EmailDetail: React.FC<EmailDetailProps> = ({ emailId, onBack }) => {
 
   const handleReadEmail = () => {
     if (isReading) {
-      voiceAssistant.stop();
+      // Use the TTS instance to stop reading
+      tts.stop();
       setIsReading(false);
     } else {
       const emailText = formatEmailForSpeech(email);

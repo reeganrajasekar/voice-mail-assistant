@@ -1,4 +1,3 @@
-
 // Interface for speech synthesis options
 export interface SpeechOptions {
   voice?: SpeechSynthesisVoice;
@@ -12,6 +11,12 @@ export interface RecognitionOptions {
   continuous?: boolean;
   interimResults?: boolean;
   lang?: string;
+}
+
+// Fix for TypeScript browser API types
+interface Window {
+  SpeechRecognition: any;
+  webkitSpeechRecognition: any;
 }
 
 // Class for text-to-speech functionality
@@ -125,7 +130,7 @@ export class SpeechRecognition {
 
   private constructor() {
     // Check for browser support
-    const SpeechRecognitionAPI = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
     if (!SpeechRecognitionAPI) {
       console.error("Speech recognition not supported in this browser");
