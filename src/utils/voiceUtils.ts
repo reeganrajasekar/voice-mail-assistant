@@ -179,6 +179,12 @@ export class SpeechRecognition {
   }
 
   public start(options: RecognitionOptions = {}, onResult: (result: string, isFinal: boolean) => void): void {
+    // Check if already listening and don't attempt to start again
+    if (this.isListening) {
+      console.log("Speech recognition is already active");
+      return;
+    }
+    
     // Apply any new options
     if (options.continuous !== undefined) this.recognition.continuous = options.continuous;
     if (options.interimResults !== undefined) this.recognition.interimResults = options.interimResults;
@@ -201,6 +207,10 @@ export class SpeechRecognition {
       console.log("Speech recognition started");
     } catch (error) {
       console.error("Failed to start speech recognition:", error);
+      this.isListening = false;
+      if (this.errorCallback) {
+        this.errorCallback("failed-to-start");
+      }
     }
   }
 

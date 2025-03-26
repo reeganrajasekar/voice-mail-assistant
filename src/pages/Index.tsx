@@ -9,6 +9,7 @@ import { VoiceAssistant as VoiceAssistantUtil } from '../utils/voiceUtils';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Mic } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   // State for UI
@@ -70,16 +71,27 @@ const Index = () => {
     };
   }, [toast]);
 
-  // Function to check microphone permissions before activating
+  // Function to handle microphone permissions and activate voice assistant
   const activateVoiceAssistant = async () => {
     try {
-      // Request microphone permission
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("Requesting microphone permission from Index component...");
+      
+      // Request microphone permission - just to check if we have access
+      // The actual audio processing will happen in the VoiceAssistant component
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setMicrophoneError(null);
       
-      // If successful, activate the assistant
-      const assistant = VoiceAssistantUtil.getInstance();
-      assistant.activate();
+      // Stop tracks to release the microphone (important for mobile devices)
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Set the state to activate the assistant component
+      setVoiceAssistantActive(true);
+      
+      // Notification that assistant is activated
+      toast({
+        title: "Voice Assistant",
+        description: "Voice assistant activated. You can now speak commands.",
+      });
     } catch (error) {
       console.error("Microphone permission error:", error);
       
@@ -89,8 +101,10 @@ const Index = () => {
           setMicrophoneError("Microphone access denied. Please allow microphone access in your browser settings.");
         } else if (error.name === "NotFoundError") {
           setMicrophoneError("No microphone detected. Please connect a microphone and try again.");
+        } else if (error.name === "NotReadableError" || error.name === "AbortError") {
+          setMicrophoneError("Could not access microphone. It may be in use by another application.");
         } else {
-          setMicrophoneError(`Microphone access error: ${error.message}`);
+          setMicrophoneError(`Microphone access error: ${error.name}. Please check your device.`);
         }
       } else {
         setMicrophoneError("Could not access microphone. Please check your device and browser settings.");
@@ -114,7 +128,6 @@ const Index = () => {
   const toggleVoiceAssistant = () => {
     if (!voiceAssistantActive) {
       // If activating, check microphone first
-      setVoiceAssistantActive(true);
       activateVoiceAssistant();
     } else {
       // If deactivating, just turn it off
@@ -173,12 +186,14 @@ const Index = () => {
           </AlertTitle>
           <AlertDescription>
             {microphoneError}
-            <button 
+            <Button 
               onClick={retryMicrophoneAccess}
-              className="ml-2 underline"
+              className="mt-2 w-full"
+              variant="outline"
+              size="sm"
             >
-              Retry
-            </button>
+              Retry Microphone Access
+            </Button>
           </AlertDescription>
         </Alert>
       )}
