@@ -6,16 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Mail } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { signup } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
@@ -27,21 +28,22 @@ const SignUp = () => {
       return;
     }
     
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      // In a real app, this would be an actual API call to create the user
-      localStorage.setItem('user', JSON.stringify({ email, isAuthenticated: true }));
+    try {
+      await signup(email, password);
       
       toast({
         title: "Success",
         description: "Account created successfully",
       });
       
-      setIsLoading(false);
       navigate('/');
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create account",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -90,8 +92,8 @@ const SignUp = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating account..." : "Sign up"}
+              <Button type="submit" className="w-full">
+                Sign up
               </Button>
             </div>
           </form>

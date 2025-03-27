@@ -6,31 +6,34 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Mail } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      // In a real app, this would validate against a backend
-      localStorage.setItem('user', JSON.stringify({ email, isAuthenticated: true }));
+    try {
+      await login(email, password);
       
       toast({
         title: "Success",
         description: "Logged in successfully",
       });
       
-      setIsLoading(false);
       navigate('/');
-    }, 1000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to login. Please check your credentials.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -84,8 +87,8 @@ const Login = () => {
                   Forgot password?
                 </Link>
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign in"}
+              <Button type="submit" className="w-full">
+                Sign in
               </Button>
             </div>
           </form>
