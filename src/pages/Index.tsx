@@ -1,186 +1,32 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 import EmailList from '../components/EmailList';
 import EmailDetail from '../components/EmailDetail';
-import VoiceAssistant from '../components/VoiceAssistant';
-import { VoiceAssistant as VoiceAssistantUtil, formatMultipleEmailsForSpeech, formatUnreadEmailsForSpeech } from '../utils/voiceUtils';
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Mic } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { getEmailsByFolder } from '../utils/emailData';
 
 const Index = () => {
   // State for UI
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [activeFolder, setActiveFolder] = useState('inbox');
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
-  const [voiceAssistantActive, setVoiceAssistantActive] = useState(false);
-  const [microphoneError, setMicrophoneError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Initialize voice assistant with additional commands for blind users
-  useEffect(() => {
-    const assistant = VoiceAssistantUtil.getInstance();
-    
-    // Register commands when component mounts
-    assistant.registerCommand("open sidebar", () => {
-      setSidebarVisible(true);
-      assistant.speak("Sidebar opened");
-      toast({
-        title: "Voice Assistant",
-        description: "Sidebar opened",
-      });
-    });
-    
-    assistant.registerCommand("close sidebar", () => {
-      setSidebarVisible(false);
-      assistant.speak("Sidebar closed");
-      toast({
-        title: "Voice Assistant",
-        description: "Sidebar closed",
-      });
-    });
-
-    // Command to activate voice assistant
-    assistant.registerCommand("activate voice", () => {
-      setVoiceAssistantActive(true);
-      activateVoiceAssistant();
-      toast({
-        title: "Voice Assistant",
-        description: "Voice assistant activated",
-      });
-    });
-
-    // NEW: Add commands to read all emails and unread emails
-    assistant.registerCommand("read all emails", () => {
-      const allEmails = getEmailsByFolder(activeFolder);
-      const speechText = formatMultipleEmailsForSpeech(allEmails, false);
-      assistant.speak(speechText);
-      toast({
-        title: "Voice Assistant",
-        description: "Reading all emails",
-      });
-    });
-    
-    assistant.registerCommand("read all mail", () => {
-      const allEmails = getEmailsByFolder(activeFolder);
-      const speechText = formatMultipleEmailsForSpeech(allEmails, false);
-      assistant.speak(speechText);
-      toast({
-        title: "Voice Assistant",
-        description: "Reading all emails",
-      });
-    });
-    
-    assistant.registerCommand("read unread emails", () => {
-      const allEmails = getEmailsByFolder(activeFolder);
-      const speechText = formatUnreadEmailsForSpeech(allEmails);
-      assistant.speak(speechText);
-      toast({
-        title: "Voice Assistant",
-        description: "Reading unread emails",
-      });
-    });
-    
-    assistant.registerCommand("read unread mail", () => {
-      const allEmails = getEmailsByFolder(activeFolder);
-      const speechText = formatUnreadEmailsForSpeech(allEmails);
-      assistant.speak(speechText);
-      toast({
-        title: "Voice Assistant",
-        description: "Reading unread emails",
-      });
-    });
-
-    // Add welcome announcement for screen readers when the app first loads
-    const welcomeMessage = "Welcome to Voice Mail. Voice assistant is available. Say 'activate voice' to turn it on.";
+  // Add welcome announcement for screen readers when the app first loads
+  React.useEffect(() => {
+    const welcomeMessage = "Welcome to Mail Reader. Speech functionality is available to read emails aloud.";
     setTimeout(() => {
       toast({
-        title: "Voice Mail",
+        title: "Mail Reader",
         description: welcomeMessage,
       });
-      
-      // Also speak the welcome message for blind users
-      assistant.speak(welcomeMessage);
     }, 1000);
-    
-    // Clean up when component unmounts
-    return () => {
-      assistant.deactivate();
-    };
-  }, [toast, activeFolder]);
-
-  // Function to handle microphone permissions and activate voice assistant
-  const activateVoiceAssistant = async () => {
-    try {
-      console.log("Requesting microphone permission from Index component...");
-      
-      // Request microphone permission - just to check if we have access
-      // The actual audio processing will happen in the VoiceAssistant component
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setMicrophoneError(null);
-      
-      // Stop tracks to release the microphone (important for mobile devices)
-      stream.getTracks().forEach(track => track.stop());
-      
-      // Set the state to activate the assistant component
-      setVoiceAssistantActive(true);
-      
-      // Notification that assistant is activated
-      toast({
-        title: "Voice Assistant",
-        description: "Voice assistant activated. You can now speak commands.",
-      });
-    } catch (error) {
-      console.error("Microphone permission error:", error);
-      
-      // Set specific error message based on error type
-      if (error instanceof DOMException) {
-        if (error.name === "NotAllowedError") {
-          setMicrophoneError("Microphone access denied. Please allow microphone access in your browser settings.");
-        } else if (error.name === "NotFoundError") {
-          setMicrophoneError("No microphone detected. Please connect a microphone and try again.");
-        } else if (error.name === "NotReadableError" || error.name === "AbortError") {
-          setMicrophoneError("Could not access microphone. It may be in use by another application.");
-        } else {
-          setMicrophoneError(`Microphone access error: ${error.name}. Please check your device.`);
-        }
-      } else {
-        setMicrophoneError("Could not access microphone. Please check your device and browser settings.");
-      }
-      
-      // Show toast for immediate feedback
-      toast({
-        title: "Microphone Error",
-        description: "Could not access microphone. Please check permissions.",
-        variant: "destructive",
-      });
-    }
-  };
+  }, [toast]);
 
   // Toggle sidebar visibility
   const toggleSidebar = () => {
     setSidebarVisible(!sidebarVisible);
-  };
-
-  // Toggle voice assistant
-  const toggleVoiceAssistant = () => {
-    if (!voiceAssistantActive) {
-      // If activating, check microphone first
-      activateVoiceAssistant();
-    } else {
-      // If deactivating, just turn it off
-      const assistant = VoiceAssistantUtil.getInstance();
-      assistant.deactivate();
-      setVoiceAssistantActive(false);
-      toast({
-        title: "Voice Assistant",
-        description: "Voice assistant deactivated",
-      });
-    }
   };
 
   // Handle selecting a folder
@@ -189,20 +35,9 @@ const Index = () => {
     setSelectedEmail(null);
   };
 
-  // Handle reading email with voice
-  const handleReadEmail = (emailId: string) => {
-    // This is handled in the EmailDetail component directly
-  };
-
   // Handle going back from email detail to list
   const handleBackToList = () => {
     setSelectedEmail(null);
-  };
-
-  // Retry microphone access
-  const retryMicrophoneAccess = () => {
-    setMicrophoneError(null);
-    activateVoiceAssistant();
   };
 
   return (
@@ -215,30 +50,7 @@ const Index = () => {
       {/* Header */}
       <Header 
         toggleSidebar={toggleSidebar} 
-        voiceAssistantActive={voiceAssistantActive}
-        toggleVoiceAssistant={toggleVoiceAssistant}
       />
-      
-      {/* Microphone Error Banner (if needed) */}
-      {microphoneError && (
-        <Alert variant="destructive" className="mx-4 mt-4">
-          <AlertTitle className="flex items-center gap-2">
-            <Mic size={16} />
-            Microphone Access Error
-          </AlertTitle>
-          <AlertDescription>
-            {microphoneError}
-            <Button 
-              onClick={retryMicrophoneAccess}
-              className="mt-2 w-full"
-              variant="outline"
-              size="sm"
-            >
-              Retry Microphone Access
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
       
       {/* Main content */}
       <main 
@@ -275,15 +87,6 @@ const Index = () => {
           )}
         </div>
       </main>
-      
-      {/* Voice Assistant UI */}
-      <VoiceAssistant 
-        isActive={voiceAssistantActive}
-        onToggle={toggleVoiceAssistant}
-        onSelectFolder={handleFolderSelect}
-        onReadEmail={handleReadEmail}
-        onNavigateBack={handleBackToList}
-      />
     </div>
   );
 };

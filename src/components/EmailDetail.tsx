@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { ArrowLeft, Star, Reply, Trash, Mail, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Star, Reply, Trash, Volume2, VolumeX } from 'lucide-react';
 import { Email, getEmailById } from '../utils/emailData';
-import { VoiceAssistant, formatEmailForSpeech, TextToSpeech } from '../utils/voiceUtils';
+import { formatEmailForSpeech, TextToSpeech } from '../utils/voiceUtils';
+import { useToast } from "@/hooks/use-toast";
 
 interface EmailDetailProps {
   emailId: string | null;
@@ -12,8 +13,8 @@ interface EmailDetailProps {
 const EmailDetail: React.FC<EmailDetailProps> = ({ emailId, onBack }) => {
   const [email, setEmail] = React.useState<Email | null>(null);
   const [isReading, setIsReading] = React.useState(false);
-  const voiceAssistant = VoiceAssistant.getInstance();
   const tts = TextToSpeech.getInstance();
+  const { toast } = useToast();
 
   React.useEffect(() => {
     if (emailId) {
@@ -51,12 +52,20 @@ const EmailDetail: React.FC<EmailDetailProps> = ({ emailId, onBack }) => {
       // Use the TTS instance to stop reading
       tts.stop();
       setIsReading(false);
+      toast({
+        title: "Speech",
+        description: "Stopped reading email",
+      });
     } else {
       const emailText = formatEmailForSpeech(email);
-      voiceAssistant.speak(emailText, () => {
+      tts.speak(emailText, {}, () => {
         setIsReading(false);
       });
       setIsReading(true);
+      toast({
+        title: "Speech",
+        description: "Reading email aloud",
+      });
     }
   };
 
