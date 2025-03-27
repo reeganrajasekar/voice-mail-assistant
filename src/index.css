@@ -57,7 +57,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -121,27 +121,27 @@
 
 @layer components {
   .email-row {
-    @apply flex items-center px-4 py-2 border-b border-gmail-border cursor-pointer transition-colors hover:bg-gmail-hover;
+    @apply flex items-center px-4 py-2 border-b border-border cursor-pointer transition-colors hover:bg-accent/50;
   }
   
   .email-row-unread {
-    @apply bg-gmail-unread font-medium;
+    @apply bg-card font-medium;
   }
   
   .email-row-read {
-    @apply bg-gmail-read;
+    @apply bg-muted/50;
   }
 
   .sidebar-item {
-    @apply flex items-center gap-3 px-4 py-2 rounded-r-full text-sm font-medium transition-colors hover:bg-gmail-hover;
+    @apply flex items-center gap-3 px-4 py-2 rounded-r-full text-sm font-medium transition-colors hover:bg-accent/50;
   }
   
   .sidebar-item-active {
-    @apply bg-gmail-accent text-gmail-primary font-medium;
+    @apply bg-accent text-primary font-medium;
   }
 
   .btn-voice {
-    @apply flex items-center justify-center w-12 h-12 rounded-full bg-gmail-primary text-white shadow-md hover:shadow-lg transition-all transform hover:scale-105 active:scale-95;
+    @apply flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-md hover:shadow-lg transition-all transform hover:scale-105 active:scale-95;
   }
 
   .animation-delay-100 {

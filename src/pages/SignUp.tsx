@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast";
 import { Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const SignUp = () => {
   const [email, setEmail] = useState('');
@@ -47,7 +48,11 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
@@ -101,7 +106,7 @@ const SignUp = () => {
         <CardFooter className="flex justify-center flex-wrap">
           <div className="text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="text-primary underline hover:text-primary-foreground">
+            <Link to="/login" className="text-primary underline hover:text-primary/80">
               Sign in
             </Link>
           </div>

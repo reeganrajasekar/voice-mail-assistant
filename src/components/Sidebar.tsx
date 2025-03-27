@@ -5,7 +5,6 @@ import {
   Plus, ChevronDown, Tag, Mail 
 } from 'lucide-react';
 import { folders, labels, getUnreadCount } from '../utils/emailData';
-import { VoiceAssistant } from '../utils/voiceUtils';
 
 interface SidebarProps {
   visible: boolean;
@@ -20,24 +19,21 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [expandedLabels, setExpandedLabels] = React.useState(false);
   const unreadCount = getUnreadCount();
-  const assistant = VoiceAssistant.getInstance();
 
   const handleFolderClick = (folderId: string) => {
     setActiveFolder(folderId);
-    assistant.speak(`Selected folder ${folders.find(f => f.id === folderId)?.name || folderId}`);
   };
 
   const toggleLabels = () => {
     setExpandedLabels(!expandedLabels);
-    assistant.speak(expandedLabels ? "Labels collapsed" : "Labels expanded");
   };
 
   return (
     <aside 
       className={`${visible ? 'translate-x-0' : '-translate-x-full'} 
                   fixed md:static inset-y-0 left-0 z-20 w-64 
-                  bg-white shadow-md transition-transform duration-300 ease-in-out
-                  border-r border-gmail-border
+                  bg-background shadow-md transition-transform duration-300 ease-in-out
+                  border-r border-border
                   md:translate-x-0 md:shadow-none`}
       aria-label="Email folders"
     >
@@ -45,7 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* Compose button */}
         <div className="p-4">
           <button 
-            className="flex items-center gap-2 bg-gmail-accent hover:bg-blue-100 text-gmail-primary px-6 py-3 rounded-2xl shadow-sm transition-colors font-medium"
+            className="flex items-center gap-2 bg-accent hover:bg-accent/80 text-primary px-6 py-3 rounded-2xl shadow-sm transition-colors font-medium"
             aria-label="Compose new email"
           >
             <Plus size={18} />
@@ -59,34 +55,34 @@ const Sidebar: React.FC<SidebarProps> = ({
             {folders.map((folder) => (
               <button
                 key={folder.id}
-                className={`sidebar-item w-full text-left ${activeFolder === folder.id ? 'sidebar-item-active' : ''}`}
+                className={`sidebar-item w-full text-left text-foreground ${activeFolder === folder.id ? 'sidebar-item-active' : ''}`}
                 onClick={() => handleFolderClick(folder.id)}
                 aria-current={activeFolder === folder.id ? 'page' : undefined}
               >
                 {folder.id === 'inbox' && (
-                  <Inbox size={18} className={activeFolder === folder.id ? 'text-gmail-primary' : 'text-gray-600'} />
+                  <Inbox size={18} className={activeFolder === folder.id ? 'text-primary' : 'text-foreground'} />
                 )}
                 {folder.id === 'starred' && (
-                  <Star size={18} className={activeFolder === folder.id ? 'text-gmail-primary' : 'text-gray-600'} />
+                  <Star size={18} className={activeFolder === folder.id ? 'text-primary' : 'text-foreground'} />
                 )}
                 {folder.id === 'sent' && (
-                  <Send size={18} className={activeFolder === folder.id ? 'text-gmail-primary' : 'text-gray-600'} />
+                  <Send size={18} className={activeFolder === folder.id ? 'text-primary' : 'text-foreground'} />
                 )}
                 {folder.id === 'drafts' && (
-                  <File size={18} className={activeFolder === folder.id ? 'text-gmail-primary' : 'text-gray-600'} />
+                  <File size={18} className={activeFolder === folder.id ? 'text-primary' : 'text-foreground'} />
                 )}
                 {folder.id === 'spam' && (
-                  <AlertCircle size={18} className={activeFolder === folder.id ? 'text-gmail-primary' : 'text-gray-600'} />
+                  <AlertCircle size={18} className={activeFolder === folder.id ? 'text-primary' : 'text-foreground'} />
                 )}
                 {folder.id === 'trash' && (
-                  <Trash size={18} className={activeFolder === folder.id ? 'text-gmail-primary' : 'text-gray-600'} />
+                  <Trash size={18} className={activeFolder === folder.id ? 'text-primary' : 'text-foreground'} />
                 )}
                 
                 <span className="flex-1">{folder.name}</span>
                 
                 {folder.count > 0 && (
                   <span 
-                    className={`${folder.id === 'inbox' && folder.count > 0 && !activeFolder ? 'bg-gmail-primary text-white' : 'bg-gray-200 text-gray-700'} 
+                    className={`${folder.id === 'inbox' && folder.count > 0 && !activeFolder ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'} 
                                text-xs px-2 py-0.5 rounded-full`}
                   >
                     {folder.count}
@@ -99,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           {/* Labels */}
           <div className="mt-4 animate-slide-in animation-delay-100">
             <button 
-              className="flex items-center justify-between w-full px-6 py-2 text-gray-600 hover:bg-gmail-hover"
+              className="flex items-center justify-between w-full px-6 py-2 text-foreground hover:bg-accent"
               onClick={toggleLabels}
               aria-expanded={expandedLabels}
               aria-controls="label-list"
