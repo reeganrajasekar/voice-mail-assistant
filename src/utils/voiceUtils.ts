@@ -1,4 +1,3 @@
-
 // Interface for speech synthesis options
 export interface SpeechOptions {
   voice?: SpeechSynthesisVoice;
@@ -279,8 +278,10 @@ export class SpeechRecognition {
   private endCallback: (() => void) | null = null;
 
   private constructor() {
-    // Initialize Web Speech API
-    const SpeechRecognitionAPI = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    // Fix for TypeScript error by using type assertion
+    const SpeechRecognitionAPI = (window as any).SpeechRecognition || 
+                                (window as any).webkitSpeechRecognition ||
+                                null;
     
     if (SpeechRecognitionAPI) {
       this.recognition = new SpeechRecognitionAPI();
