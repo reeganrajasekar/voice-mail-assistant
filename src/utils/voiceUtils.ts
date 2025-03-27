@@ -218,3 +218,163 @@ export const formatUnreadEmailsForSpeech = (emails: any[]): string => {
   
   return formatTextForSpeech(speech);
 };
+
+// Adding the missing VoiceAssistant class that's being imported
+export class VoiceAssistant {
+  private static instance: VoiceAssistant;
+  private tts: TextToSpeech;
+  private commands: Map<string, (args?: string) => void> = new Map();
+
+  private constructor() {
+    this.tts = TextToSpeech.getInstance();
+  }
+
+  public static getInstance(): VoiceAssistant {
+    if (!VoiceAssistant.instance) {
+      VoiceAssistant.instance = new VoiceAssistant();
+    }
+    return VoiceAssistant.instance;
+  }
+
+  public speak(text: string, options?: SpeechOptions, onEnd?: () => void): void {
+    this.tts.speak(text, options, onEnd);
+  }
+
+  public stop(): void {
+    this.tts.stop();
+  }
+
+  public registerCommand(command: string, callback: (args?: string) => void): void {
+    this.commands.set(command.toLowerCase(), callback);
+  }
+
+  public processCommand(text: string): boolean {
+    const lowerText = text.toLowerCase();
+    
+    // Check for exact command matches first
+    if (this.commands.has(lowerText)) {
+      this.commands.get(lowerText)?.();
+      return true;
+    }
+    
+    // Then check for commands with arguments
+    for (const [cmd, callback] of this.commands.entries()) {
+      if (lowerText.startsWith(cmd + " ")) {
+        const args = lowerText.substring(cmd.length).trim();
+        callback(args);
+        return true;
+      }
+    }
+    
+    return false;
+  }
+}
+
+// Adding missing SpeechRecognition class
+export class SpeechRecognition {
+  private static instance: SpeechRecognition;
+  private recognition: any = null;
+  private isListening: boolean = false;
+  private errorCallback: ((error: string) => void) | null = null;
+  private endCallback: (() => void) | null = null;
+
+  private constructor() {
+    // Initialize Web Speech API
+    const SpeechRecognitionAPI = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    
+    if (SpeechRecognitionAPI) {
+      this.recognition = new SpeechRecognitionAPI();
+    } else {
+      console.error("Speech recognition not supported in this browser");
+    }
+  }
+
+  public static getInstance(): SpeechRecognition {
+    if (!SpeechRecognition.instance) {
+      SpeechRecognition.instance = new SpeechRecognition();
+    }
+    return SpeechRecognition.instance;
+  }
+
+  public isSupported(): boolean {
+    return this.recognition !== null;
+  }
+
+  public start(
+    options: { continuous?: boolean; interimResults?: boolean } = {},
+    resultCallback: (result: string, isFinal: boolean) => void
+  ): void {
+    if (!this.recognition) {
+      if (this.errorCallback) {
+        this.errorCallback("Speech recognition not supported");
+      }
+      return;
+    }
+
+    if (this.isListening) {
+      this.stop();
+    }
+
+    // Configure recognition
+    this.recognition.continuous = options.continuous ?? false;
+    this.recognition.interimResults = options.interimResults ?? false;
+    this.recognition.lang = 'en-US';
+
+    // Set up event handlers
+    this.recognition.onresult = (event: any) => {
+      const last = event.results.length - 1;
+      const result = event.results[last][0].transcript;
+      const isFinal = event.results[last].isFinal;
+      
+      resultCallback(result, isFinal);
+    };
+
+    this.recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      if (this.errorCallback) {
+        this.errorCallback(event.error);
+      }
+    };
+
+    this.recognition.onend = () => {
+      this.isListening = false;
+      if (this.endCallback) {
+        this.endCallback();
+      }
+    };
+
+    // Start recognition
+    try {
+      this.recognition.start();
+      this.isListening = true;
+    } catch (error) {
+      console.error("Error starting speech recognition:", error);
+      if (this.errorCallback) {
+        this.errorCallback("Failed to start recognition");
+      }
+    }
+  }
+
+  public stop(): void {
+    if (this.recognition && this.isListening) {
+      try {
+        this.recognition.stop();
+      } catch (error) {
+        console.error("Error stopping speech recognition:", error);
+      }
+      this.isListening = false;
+    }
+  }
+
+  public onError(callback: (error: string) => void): void {
+    this.errorCallback = callback;
+  }
+
+  public onEnd(callback: () => void): void {
+    this.endCallback = callback;
+  }
+
+  public isActive(): boolean {
+    return this.isListening;
+  }
+}
