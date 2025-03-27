@@ -5,11 +5,12 @@ import Sidebar from '../components/Sidebar';
 import EmailList from '../components/EmailList';
 import EmailDetail from '../components/EmailDetail';
 import VoiceAssistant from '../components/VoiceAssistant';
-import { VoiceAssistant as VoiceAssistantUtil } from '../utils/voiceUtils';
+import { VoiceAssistant as VoiceAssistantUtil, formatMultipleEmailsForSpeech, formatUnreadEmailsForSpeech } from '../utils/voiceUtils';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getEmailsByFolder } from '../utils/emailData';
 
 const Index = () => {
   // State for UI
@@ -53,6 +54,47 @@ const Index = () => {
       });
     });
 
+    // NEW: Add commands to read all emails and unread emails
+    assistant.registerCommand("read all emails", () => {
+      const allEmails = getEmailsByFolder(activeFolder);
+      const speechText = formatMultipleEmailsForSpeech(allEmails, false);
+      assistant.speak(speechText);
+      toast({
+        title: "Voice Assistant",
+        description: "Reading all emails",
+      });
+    });
+    
+    assistant.registerCommand("read all mail", () => {
+      const allEmails = getEmailsByFolder(activeFolder);
+      const speechText = formatMultipleEmailsForSpeech(allEmails, false);
+      assistant.speak(speechText);
+      toast({
+        title: "Voice Assistant",
+        description: "Reading all emails",
+      });
+    });
+    
+    assistant.registerCommand("read unread emails", () => {
+      const allEmails = getEmailsByFolder(activeFolder);
+      const speechText = formatUnreadEmailsForSpeech(allEmails);
+      assistant.speak(speechText);
+      toast({
+        title: "Voice Assistant",
+        description: "Reading unread emails",
+      });
+    });
+    
+    assistant.registerCommand("read unread mail", () => {
+      const allEmails = getEmailsByFolder(activeFolder);
+      const speechText = formatUnreadEmailsForSpeech(allEmails);
+      assistant.speak(speechText);
+      toast({
+        title: "Voice Assistant",
+        description: "Reading unread emails",
+      });
+    });
+
     // Add welcome announcement for screen readers when the app first loads
     const welcomeMessage = "Welcome to Voice Mail. Voice assistant is available. Say 'activate voice' to turn it on.";
     setTimeout(() => {
@@ -69,7 +111,7 @@ const Index = () => {
     return () => {
       assistant.deactivate();
     };
-  }, [toast]);
+  }, [toast, activeFolder]);
 
   // Function to handle microphone permissions and activate voice assistant
   const activateVoiceAssistant = async () => {

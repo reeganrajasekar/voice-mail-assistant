@@ -1,9 +1,18 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { Mic, X, Volume2, VolumeX, Settings, ChevronUp, ChevronDown, AlertCircle } from 'lucide-react';
-import { VoiceAssistant as VoiceAssistantUtil, SpeechRecognition, TextToSpeech } from '../utils/voiceUtils';
+import { 
+  VoiceAssistant as VoiceAssistantUtil, 
+  SpeechRecognition, 
+  TextToSpeech, 
+  formatEmailForSpeech, 
+  formatMultipleEmailsForSpeech, 
+  formatUnreadEmailsForSpeech 
+} from '../utils/voiceUtils';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { getEmailsByFolder, getEmailById, emails } from "../utils/emailData";
 
 interface VoiceAssistantProps {
   isActive: boolean;
@@ -115,6 +124,61 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         toast({
           title: "Voice Assistant",
           description: announceText,
+        });
+        assistantInstance.speak(announceText);
+      });
+      
+      // NEW: Command to read all emails
+      assistantInstance.registerCommand("read all emails", () => {
+        const allEmails = getEmailsByFolder("inbox");
+        const announceText = formatMultipleEmailsForSpeech(allEmails, false);
+        toast({
+          title: "Voice Assistant",
+          description: "Reading all emails",
+        });
+        assistantInstance.speak(announceText);
+      });
+      
+      // NEW: Command to read detailed emails
+      assistantInstance.registerCommand("read all emails with details", () => {
+        const allEmails = getEmailsByFolder("inbox");
+        const announceText = formatMultipleEmailsForSpeech(allEmails, true);
+        toast({
+          title: "Voice Assistant",
+          description: "Reading all emails with details",
+        });
+        assistantInstance.speak(announceText);
+      });
+      
+      // NEW: Command to read unread emails
+      assistantInstance.registerCommand("read unread emails", () => {
+        const allEmails = getEmailsByFolder("inbox");
+        const announceText = formatUnreadEmailsForSpeech(allEmails);
+        toast({
+          title: "Voice Assistant",
+          description: "Reading unread emails",
+        });
+        assistantInstance.speak(announceText);
+      });
+      
+      // Alias for reading unread emails
+      assistantInstance.registerCommand("read unread mail", () => {
+        const allEmails = getEmailsByFolder("inbox");
+        const announceText = formatUnreadEmailsForSpeech(allEmails);
+        toast({
+          title: "Voice Assistant",
+          description: "Reading unread emails",
+        });
+        assistantInstance.speak(announceText);
+      });
+      
+      // Alias for reading all emails
+      assistantInstance.registerCommand("read all mail", () => {
+        const allEmails = getEmailsByFolder("inbox");
+        const announceText = formatMultipleEmailsForSpeech(allEmails, false);
+        toast({
+          title: "Voice Assistant",
+          description: "Reading all emails",
         });
         assistantInstance.speak(announceText);
       });
@@ -528,6 +592,8 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
             <ul className="space-y-1">
               <li>• "open inbox/starred/sent/etc"</li>
               <li>• "read email"</li>
+              <li>• "read all emails/mail"</li>
+              <li>• "read unread emails/mail"</li>
               <li>• "summarize"</li>
               <li>• "reply"</li>
               <li>• "delete"</li>

@@ -414,3 +414,50 @@ export const formatEmailForSpeech = (email: any): string => {
   
   return formatTextForSpeech(speech);
 };
+
+// NEW: Functions to format multiple emails for speech
+export const formatMultipleEmailsForSpeech = (emails: any[], includeBody: boolean = false): string => {
+  let speech = `You have ${emails.length} emails. `;
+  
+  if (emails.length === 0) {
+    return "You have no emails in this folder.";
+  }
+  
+  emails.forEach((email, index) => {
+    speech += `Email ${index + 1}: From ${email.from.name}. Subject: ${email.subject}. `;
+    
+    // Only include email body if requested
+    if (includeBody) {
+      let body = email.body.replace(/\n\n/g, '. ').replace(/\n/g, '. ');
+      if (body.length > 200) {
+        body = body.substring(0, 200) + "... (message truncated)";
+      }
+      speech += `Message preview: ${body}. `;
+    }
+    
+    // Add a longer pause between emails
+    speech += ". ";
+  });
+  
+  return formatTextForSpeech(speech);
+};
+
+// NEW: Function to summarize unread emails
+export const formatUnreadEmailsForSpeech = (emails: any[]): string => {
+  const unreadEmails = emails.filter(email => !email.read);
+  
+  if (unreadEmails.length === 0) {
+    return "You have no unread emails.";
+  }
+  
+  let speech = `You have ${unreadEmails.length} unread emails. `;
+  
+  unreadEmails.forEach((email, index) => {
+    speech += `Unread email ${index + 1}: From ${email.from.name}. Subject: ${email.subject}. `;
+    
+    // Add a longer pause between emails
+    speech += ". ";
+  });
+  
+  return formatTextForSpeech(speech);
+};
